@@ -1,0 +1,21 @@
+# {{ item.module_name }} input config
+# Ansible management
+
+{% if filebeat_modules %}
+- module: {{ item.module_name }}
+{% for sub in item.submodules %}
+  {{ sub.name }}:
+    enabled: {{ sub.enabled | default(true) }}
+{% if sub.paths is defined %}
+    var.paths:
+{% for path in sub.paths %}
+      - {{ path }}
+{% endfor %}
+{% endif %}
+{% if sub.additional is defined %}
+{% for key, value in sub.additional.items() %}
+    {{ key }}: {{ value }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}

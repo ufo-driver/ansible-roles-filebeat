@@ -1,0 +1,62 @@
+filebeat.config.modules:
+  path: {{ filebeat_dir }}/{{ filebeat_modules_dir }}/*.yml
+  reload.enabled: {{ filebeat_modules_reload }}
+
+filebeat.config.inputs:
+  path: {{ filebeat_dir }}/{{ filebeat_inputs_dir }}/*.yml
+  reload.enabled: {{ filebeat_inputs_reload }}
+
+setup.template.enabled: {{ filebeat_setup_template }}
+xpack.monitoring.enabled: {{ filebeat_xpack_monitoring }}
+
+output.logstash:
+  hosts:
+  {% if filebeat_logstash_hosts -%}
+  {% for host in filebeat_logstash_hosts -%}
+    - {{ host }}:{{ filebeat_logstash_port }}
+  {% endfor %}
+  {% endif %}
+
+  max_retries: {{ filebeat_max_retries_logstash }}
+  loadbalance: {{ 'true' if filebeat_logstash_hosts | length > 1 else 'false' }}
+  workers: {{ filebeat_logstash_workers }}
+
+{% if filebeat_queue %}
+{% for queue_type, queue_config in filebeat_queue.items() %}
+queue.{{ queue_type }}:
+{% for subkey, subvalue in queue_config.items() %}
+  {% if subvalue is mapping %}
+  {{ subkey }}:
+{{ subvalue | to_nice_yaml(indent=2, sort_keys=false) | indent(6, true) }}
+  {% else %}
+  {{ subkey }}: {{ subvalue }}
+  {% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+{% if filebeat_processors | length > 0 %}
+processors:
+{% for processor in filebeat_processors %}
+{{ processor | to_nice_yaml(indent=4, sort_keys=false) | trim }}
+{% endfor %}
+{% endif %}
+
+{% if filebeat_logging %}
+{% for log_key, log_value in filebeat_logging.items() %}
+{% if log_value is mapping %}
+logging.{{ log_key }}:
+{{ log_value | to_nice_yaml(indent=2, sort_keys=false) | indent(2, true) }}
+{% else %}
+logging.{{ log_key }}: {{ log_value }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+filebeat.registry.path: {{ filebeat_registry_path }}
+filebeat.registry.flush: {{ filebeat_registry_flush }}
+filebeat.registry.file_permissions: {{ filebeat_registry_file_permissions }}
+filebeat.registry.cache:
+  cleanup_interval: {{ filebeat_registry_cache.cleanup_interval }}
+  max_file_handles: {{ filebeat_registry_cache.max_file_handles }}
+filebeat.registry.drop_on_error: {{ filebeat_registry_drop_on_error }}

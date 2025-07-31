@@ -1,0 +1,21 @@
+---
+# - name: Ensure Filebeat .deb package is downloaded
+#   ansible.builtin.shell: |
+#     wget "{{ filebeat_repository_url }}/{{ filebeat_version }}-amd64.deb" -O "/tmp/{{ filebeat_version }}-amd64.deb"
+#   environment: "{{ proxy_env }}"
+
+# - name: Filebeat | Ubuntu | Install downloaded package
+#   ansible.builtin.apt:
+#     deb: "/tmp/{{ filebeat_version }}-amd64.deb"
+#   ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Filebeat | Ubuntu | Copy Filebeat package to host
+  copy:
+    src: "{{ filebeat_version }}-amd64.deb"
+    dest: "/tmp/{{ filebeat_version }}-amd64.deb"
+    mode: '0644'
+
+- name: Filebeat | Ubuntu | Install Filebeat package
+  apt:
+    deb: "/tmp/{{ filebeat_version }}-amd64.deb"
+    state: present

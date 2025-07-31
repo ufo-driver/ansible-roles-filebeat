@@ -1,0 +1,17 @@
+---
+- name: Backup | Create backup dir
+  ansible.builtin.file:
+    name: "{{ filebeat_backup_dir }}/{{ ansible_date_time.iso8601_basic_short }}"
+    state: directory
+    mode: "0755"
+  register: backup_dir_work
+
+- name: Backup | Backup conf file
+  ansible.builtin.copy:
+    src: "{{ filebeat_dir }}/{{ filebeat_main_file }}"
+    dest: "{{ backup_dir_work.path }}"
+    owner: root
+    group: root
+    mode: "0644"
+    remote_src: true
+  failed_when: false

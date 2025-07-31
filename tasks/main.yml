@@ -1,0 +1,72 @@
+---
+- name: Filebeat | Set proxy environment variables
+  ansible.builtin.set_fact:
+    proxy_env:
+      http_proxy: "{{ http_proxy }}"
+      https_proxy: "{{ http_proxy }}"
+
+- name: Filebeat | Install Filebeat
+  ansible.builtin.include_tasks: "{{ ansible_facts['distribution'] }}.yml"
+
+- name: Filebeat | Backup filebeat configs
+  ansible.builtin.include_tasks: backup.yml
+  when: filebeat_backup
+
+- name: Filebeat | Copy filebeat config
+  ansible.builtin.template:
+    src: "templates/filebeat.j2"
+    dest: "{{ filebeat_dir }}/{{ filebeat_main_file }}"
+    mode: "0644"
+  notify: Filebeat restart
+
+- name: Filebeat | Create configuration dirs
+  ansible.builtin.file:
+    path: "{{ filebeat_dir }}/{{ item }}"
+    state: directory
+    mode: 0700
+  loop:
+    - "{{ filebeat_inputs_dir }}"
+    - "{{ filebeat_modules_dir }}"
+  when: not ansible_check_mode
+
+- name: Filebeat | Render Filebeat modules.d configs
+  template:
+    src: filebeat_module.j2
+    dest: "{{ filebeat_dir }}/{{ filebeat_modules_dir }}/{{ item.module_name }}.yml"
+  loop: "{{ filebeat_modules }}"
+  notify: Filebeat restart
+
+- name: Filebeat | Find files on remote host on inputs.d directory
+  ansible.builtin.find:
+    paths: "{{ filebeat_dir }}/{{ filebeat_inputs_dir }}"
+    file_type: file
+  register: existing_inputs_d
+
+- name: Filebeat | Get list of file names to delete
+  ansible.builtin.set_fact:
+    files_to_delete: >-
+      {{
+        existing_inputs_d.files
+        | map(attribute='path')
+        | map('basename')
+        | difference(filebeat_inputs | map(attribute='name') | list)
+      }}
+
+- name: Filebeat | Remove unlisted files
+  ansible.builtin.file:
+    path: "{{ filebeat_dir }}/{{ filebeat_inputs_dir }}/{{ item }}"
+    state: absent
+  loop: "{{ files_to_delete }}"
+
+- name: Filebeat | Render Filebeat inputs.d configs
+  template:
+    src: filebeat_input.j2
+    dest: "{{ filebeat_dir }}/{{ filebeat_inputs_dir }}/{{ item.name }}.yml"
+  loop: "{{ filebeat_inputs }}"
+
+- name: Filebeat | Ensure enable service filebeat
+  ansible.builtin.service:
+    name: filebeat
+    enabled: true
+    state: started
+  when: not ansible_check_mode

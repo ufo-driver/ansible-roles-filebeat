@@ -1,0 +1,92 @@
+---
+# Base setup
+filebeat_backup: true
+filebeat_backup_dir: /etc/filebeat/backup
+filebeat_dir: /etc/filebeat
+filebeat_main_file: filebeat.yml
+filebeat_repository_url: "https://mirror.yandex.ru/mirrors/elastic/7/pool/main/f/filebeat"
+filebeat_version: "filebeat-7.17.29"
+filebeat_logstash_port: "5044"
+filebeat_modules_reload: false
+filebeat_inputs_reload: false
+filebeat_setup_template: false
+filebeat_max_retries_logstash: -1
+filebeat_logstash_workers: 2
+filebeat_xpack_monitoring: false
+filebeat_inputs_dir: "inputs.d"
+filebeat_modules_dir: "modules.d"
+# Registry
+filebeat_registry_path: "/var/lib/filebeat/registry"
+filebeat_registry_flush: 5
+filebeat_registry_file_permissions: 0600
+filebeat_registry_cache:
+  cleanup_interval: 10m
+  max_file_handles: 1024
+filebeat_registry_drop_on_error: false
+# Logging
+filebeat_logging:
+  enabled: true
+  level: warning
+  to_files: true
+  files:
+    path: "/var/log/filebeat"
+    name: "filebeat"
+    keepfiles: 3
+# Queue
+filebeat_queue:
+  spool:
+    file:
+      path: /var/lib/filebeat/spool.dat
+      size: 1024MiB
+      write:
+        buffer_size: 10MiB
+        codec: json
+        flush.events: 1024
+        flush.timeout: 5s
+
+# Modules
+filebeat_modules:
+  - module_name: system
+    submodules:
+      - name: syslog
+        enabled: true
+      - name: auth
+        enabled: false
+  # - module_name: nginx
+  #   submodules:
+  #     - name: access
+  #       enabled: true
+  #       paths:
+  #         - /var/log/nginx/*access*.log
+  #     - name: error
+  #       enabled: true
+  #       paths:
+  #         - /var/log/nginx/*error*.log
+
+# Inputs
+filebeat_inputs: []
+  # - name: filestream_logs
+  #   type: filestream
+  #   enabled: false
+  #   paths:
+  #     - /var/log/*.log
+  # - name: json_logs
+  #   paths:
+  #     - /my/logdir/json*.log
+  #   fields:
+  #     standstage: dev
+  #     team: myteam_fp
+  #     app: myapplogjson
+  #   json:
+  #     keys_under_root: true
+  #     add_error_key: true
+  #     overwrite_keys: true
+  #   scan_frequency: 10s
+
+# Processors
+filebeat_processors: []
+  # - drop_event:
+  #     when:
+  #       equals:
+  #         event.dataset: "nginx.access"
+  # - add_host_metadata: ~

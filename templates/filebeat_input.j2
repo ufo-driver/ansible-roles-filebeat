@@ -1,0 +1,23 @@
+# {{ item.name }} input config
+# Ansible management
+
+- type: {{ item.type | default("log") }}
+  enabled: {{ item.enabled | default(true) }}
+  paths:
+{% for path in item.paths %}
+    - {{ path }}
+{% endfor %}
+{% if item.fields is defined %}
+  fields:
+{% for key, value in item.fields.items() %}
+    {{ key }}: {{ value }}
+{% endfor %}
+{% endif %}
+{% if item.json is defined %}
+  json.keys_under_root: {{ item.json.keys_under_root | default(true) }}
+  json.add_error_key: {{ item.json.add_error_key | default(true) }}
+  json.overwrite_keys: {{ item.json.overwrite_keys | default(true) }}
+{% endif %}
+{% if item.scan_frequency is defined %}
+  scan_frequency: {{ item.scan_frequency }}
+{% endif %}
